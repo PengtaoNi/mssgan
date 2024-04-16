@@ -1,0 +1,1 @@
+for f in $1/*.mp3; do ffmpeg -i "$f" "${f%.mp3}.wav"; rm "$f"; done

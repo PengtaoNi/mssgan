@@ -14,7 +14,7 @@ from models.ConvDiscriminator import ConvDiscriminator
 
 def train(opt):
     utils.set_seeds(opt)
-    device = utils.get_device(opt.cuda)
+    device = utils.get_device()
     
     dataset = InstDataset(opt.dataset_path)
     dataloader = DataLoader(dataset, num_workers=2, batch_size=20, shuffle=True)
@@ -36,6 +36,7 @@ def train(opt):
     G_loss_avg = []
     D1_loss_avg = []
     D2_loss_avg = []
+    print('Start training...')
     for epoch in range(opt.epochs):
         G_loss_total = 0
         D1_loss_total = 0
@@ -99,7 +100,7 @@ def train(opt):
         G_loss_avg.append(G_loss_total / len(dataloader))
         D1_loss_avg.append(D1_loss_total / len(dataloader))
         D2_loss_avg.append(D2_loss_total / len(dataloader))
-        print(f"Epoch: {epoch}, G loss: {G_loss_avg[-1]},
+        print(f"Epoch: {epoch}, G loss: {G_loss_avg[-1]}, \
                 D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
         
     output_path = os.path.join(opt.output_path, "G_" + str(epoch))
@@ -108,7 +109,7 @@ def train(opt):
 
 def eval(opt):
     utils.set_seeds(opt)
-    device = utils.get_device(opt.cuda)
+    device = utils.get_device()
 
 def get_opt():
     parser = argparse.ArgumentParser()
@@ -119,7 +120,6 @@ def get_opt():
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=20)
-    parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--z_dim', type=int, default=50)
 
     parser.add_argument('--win_length', type=int, default=512)
@@ -136,6 +136,5 @@ def get_opt():
 if __name__ == "__main__":
     opt = get_opt()
 
-    if not opt.eval:
-        train(opt)
+    train(opt)
     eval(opt)

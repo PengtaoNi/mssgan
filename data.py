@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from scipy.io import wavfile
+import librosa
 
 import torch
 from torch.utils.data.dataset import Dataset
@@ -8,7 +9,8 @@ from torch.utils.data.dataset import Dataset
 import utils
 
 def preprocess(path):
-    inst_list = os.listdir(path)
+    print('Preprocessing dataset...')
+    inst_list = ['flute', 'oboe']
 
     # concatenate samples for each instrument
     concat_dict = dict()
@@ -18,7 +20,7 @@ def preprocess(path):
         for wav in os.listdir(os.path.join(path, inst)):
             if not wav.endswith('.wav'):
                 continue
-            sample_rate, data = wavfile.read(os.path.join(path, inst, wav))
+            data, sample_rate = librosa.load(os.path.join(path, inst, wav))
             concat.append(data)
         concat = np.concatenate(concat)
         concat_dict[inst] = concat
@@ -26,20 +28,21 @@ def preprocess(path):
         if len(concat) > max_len:
             max_len = len(concat)
     
-    # for inst in inst_list:
-    #     wavfile.write(os.path.join(path, inst+'.wav'), sample_rate, concat_dict[inst])
-    
     # generate mixture
     mixture = []
     for inst in inst_list:
         concat = concat_dict[inst]
         while len(concat) < max_len:
-            concat = np.concatenate(concat, concat)
+            concat = np.concatenate([concat, concat])
         concat = concat[:max_len]
         mixture.append(concat)
         concat_dict[inst] = concat
         mixture.append(concat)
-    mixture = np.sum(mixture)
+    mixture = np.sum(mixture, axis=0)
+    
+    for inst in inst_list:
+        wavfile.write(os.path.join(path, inst+'.wav'), sample_rate, concat_dict[inst])
+    wavfile.write(os.path.join(path, 'mixture.wav'), sample_rate, mixture)
     
     # generate spectrograms
     interval = 10

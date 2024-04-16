@@ -9,17 +9,14 @@ def set_seeds(opt):
     Set Python, numpy as and torch random seeds to a fixed number
     :param opt: Option dictionary containined .seed member value
     '''
-    if opt.seed is None:
-        opt.seed = random.randint(1, 10000)
+    opt.seed = random.randint(1, 10000)
     print("Random Seed: ", opt.seed)
     random.seed(opt.seed)
     torch.manual_seed(opt.seed)
     np.random.seed(opt.seed)
 
-def get_device(cuda):
-    if torch.cuda.is_available() and not cuda:
-        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-    device = torch.device("cuda:0" if cuda else "cpu")
+def get_device():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     return device
 
 # def audio_to_spectrogram(audio, hop_length, win_length, cut_last_freq=True):

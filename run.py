@@ -17,7 +17,7 @@ def train(opt):
     device = utils.get_device()
     
     dataset = InstDataset(opt.dataset_path, opt.input_w)
-    dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True)
+    dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True, drop_last=True)
 
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim), torch.Tensor([1] * opt.z_dim))
 
@@ -43,39 +43,36 @@ def train(opt):
         D2_loss_total = 0
 
         for i, sample in enumerate(dataloader):
-            print(sample.shape)
-            inst1 = sample[:, 0:1, :, :].to(device)
-            inst2 = sample[:, 1:2, :, :].to(device)
-            mixture = sample[:, 2:3, :, :].to(device)
+            inst1 = sample[:, 0:1].to(device)
+            inst2 = sample[:, 1:2].to(device)
+            mixture = sample[:, 2:3].to(device)
             noise = noise_dist.sample().to(device)
-            print(mixture.shape)
-            print(noise.shape)
 
             fake = G([mixture, noise])
-            fake1 = fake[0, 1]
-            fake2 = fake[0, 2]
+            fake1 = fake[:, 0:1]
+            fake2 = fake[:, 1:2]
 
             # train discriminator
-            real_label = torch.full((inst1.size(0),), 1, device=device)
-            fake_label = torch.full((inst1.size(0),), 0, device=device)
+            # real_label = torch.full((inst1.size(0),), 1.0, device=device)
+            # fake_label = torch.full((inst1.size(0),), 0.0, device=device)
 
             D1_optimizer.zero_grad()
             D2_optimizer.zero_grad()
             
             D1_real = D1(inst1)
-            D2_real = D2(inst2)
             D1_fake = D1(fake1)
+            D2_real = D2(inst2)
             D2_fake = D2(fake2)
 
-            D1_real_loss = criterion(D1_real, real_label)
-            D1_fake_loss = criterion(D1_fake, fake_label)
-            D2_real_loss = criterion(D2_real, real_label)
-            D2_fake_loss = criterion(D2_fake, fake_label)
+            D1_real_loss = criterion(D1_real, torch.full((inst1.size(0),), 1.0, device=device))
+            D1_fake_loss = criterion(D1_fake, torch.full((inst1.size(0),), 0.0, device=device))
+            D2_real_loss = criterion(D2_real, torch.full((inst1.size(0),), 1.0, device=device))
+            D2_fake_loss = criterion(D2_fake, torch.full((inst1.size(0),), 0.0, device=device))
 
             D1_loss = (D1_real_loss + D1_fake_loss) / 2
             D2_loss = (D2_real_loss + D2_fake_loss) / 2
 
-            D1_loss.backward()
+            D1_loss.backward(retain_graph=True)
             D2_loss.backward()
             D1_optimizer.step()
             D2_optimizer.step()
@@ -84,14 +81,14 @@ def train(opt):
             G_optimizer.zero_grad()
 
             generated = G([mixture, noise])
-            generated1 = generated[0, 1]
-            generated2 = generated[0, 2]
+            generated1 = generated[:, 0:1]
+            generated2 = generated[:, 1:2]
 
-            D1_fake = D1(generated1)
-            D2_fake = D2(generated2)
+            D1_generated = D1(generated1)
+            D2_generated = D2(generated2)
 
-            G_loss = (criterion(D1_fake, real_label) +
-                      criterion(D2_fake, real_label)) / 2
+            G_loss = (criterion(D1_generated, torch.full((inst1.size(0),), 1.0, device=device)) +
+                      criterion(D2_generated, torch.full((inst1.size(0),), 1.0, device=device))) / 2
             
             G_loss.backward()
             G_optimizer.step()
@@ -105,7 +102,8 @@ def train(opt):
         D2_loss_avg.append(D2_loss_total / len(dataloader))
         print(f"Epoch: {epoch}, G loss: {G_loss_avg[-1]}, \
                 D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
-        
+    
+    os.makedirs(opt.output_path, exist_ok=True)
     output_path = os.path.join(opt.output_path, "G_" + str(epoch))
     print("Saving generator at " + output_path)
     torch.save(G.state_dict(), output_path)
@@ -114,13 +112,19 @@ def eval(opt):
     utils.set_seeds(opt)
     device = utils.get_device()
 
+    G = Unet(opt).to(device)
+    G.load_state_dict(torch.load(opt.model_path))
+    G.eval()
+
 def get_opt():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset_path', type=str)
-    parser.add_argument('--output_path', type=str)
+    parser.add_argument('--dataset_path', type=str, default='dataset')
+    parser.add_argument('--output_path', type=str, default='output')
+    parser.add_argument('--model_path', type=str, default='G')
+    parser.add_argument('--input_path', type=str, default='input')
 
-    parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--z_dim', type=int, default=50)

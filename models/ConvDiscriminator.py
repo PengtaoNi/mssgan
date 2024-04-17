@@ -8,11 +8,11 @@ class ConvDiscriminator(nn.Module):
     def __init__(self, opt, input_channels=1, filters=32, spectral_norm=True):
         super(ConvDiscriminator, self).__init__()
 
-        x_dim, y_dim = opt.input_height, opt.input_width
+        x_dim, y_dim = opt.input_h, opt.input_w
 
         num_layers = int(np.log2(min(x_dim, y_dim)) - 3)
-        feature_width = x_dim // (2 ** (num_layers+1))
-        feature_height = y_dim // (2 ** (num_layers+1))
+        feature_width = x_dim // (2 ** (num_layers))
+        feature_height = y_dim // (2 ** (num_layers))
 
         assert(np.mod(num_layers, 1) == 0)
         num_layers = int(num_layers)

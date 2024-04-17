@@ -8,7 +8,7 @@ from torch.utils.data.dataset import Dataset
 
 import utils
 
-def preprocess(path):
+def preprocess(path, input_w):
     print('Preprocessing dataset...')
     inst_list = ['flute', 'oboe']
 
@@ -45,34 +45,41 @@ def preprocess(path):
     wavfile.write(os.path.join(path, 'mixture.wav'), sample_rate, mixture)
     
     # generate spectrograms
-    interval = 10
-    n_samples = max_len // interval
-    for i in range(n_samples):
+    inst_spectrograms = dict()
+    for inst in inst_list:
+        audio = np.expand_dims(concat_dict[inst], axis=0).T
+        mag, phase = utils.compute_spectrogram(audio.squeeze(1), 512, 256)
+        inst_spectrograms[inst] = mag
+    audio = np.expand_dims(mixture, axis=0).T
+    mix_spectrogram, phase = utils.compute_spectrogram(audio.squeeze(1), 512, 256)
+
+    length = mag.shape[1]
+    n_samples = 0
+    for i in range(0, length-input_w, input_w//2):
+        sample = []
         for inst in inst_list:
-            audio = concat_dict[inst][i*interval*sample_rate: (i+1)*interval*sample_rate]
-            mag, phase = utils.compute_spectrogram(audio, 512, 256)
-            np.save(os.path.join(path, inst+str(i)+'.npy'), mag)
-        audio = mixture[i*interval*sample_rate: (i+1)*interval*sample_rate]
-        mag, phase = utils.compute_spectrogram(audio, 512, 256)
-        np.save(os.path.join(path, 'mixture'+str(i)+'.npy'), mag)
+            sample.append(inst_spectrograms[inst][:, i:i+input_w])
+        sample.append(mix_spectrogram[:, i:i+input_w])
+        sample = np.stack(sample, axis=0)
+        np.save(os.path.join(path, str(n_samples)+".npy"), sample)
+
+        n_samples += 1
+
+    print(f'{n_samples} samples')
     
     return inst_list, n_samples
 
 class InstDataset(Dataset):
 
-    def __init__(self, path):
+    def __init__(self, path, input_w):
         self.path = path
-        self.inst_list, self.n_samples = preprocess(path)
+        self.inst_list, self.n_samples = preprocess(path, input_w)
 
     def __getitem__(self, index):
-        insts = []
-        for inst in self.inst_list:
-            sample_path = os.path.join(self.path, inst+str(index)+'.npy')
-            insts.append(torch.from_numpy(np.load(sample_path)))
-        mixture_path = os.path.join(self.path, 'mixture'+str(index)+'.npy')
-        mixture = torch.from_numpy(np.load(mixture_path))
+        sample_path = os.path.join(self.path, str(index)+".npy")
+        sample = torch.from_numpy(np.load(sample_path))
 
-        return insts, mixture
+        return sample
 
     def __len__(self):
         return self.n_samples

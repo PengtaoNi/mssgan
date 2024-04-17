@@ -1,4 +1,5 @@
 import torch
+from torch._higher_order_ops.cond import cond_func
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -14,8 +15,8 @@ class Unet(nn.Module):
         self.down3 = down(ngf*4, ngf*8)
         self.down4 = down(ngf*8, ngf*8)
 
-        fmap_shape = (opt.input_width//16)*(opt.input_height//16)
-        noise_channels = 2
+        fmap_shape = opt.input_w * opt.input_h // 8
+        noise_channels = 1
         self.fc_noise = nn.Linear(opt.z_dim, noise_channels*fmap_shape)
 
         self.up1 = up(ngf*16 + noise_channels, ngf*4)
@@ -54,11 +55,11 @@ class Unet(nn.Module):
         x = self.output_activation(x)
 
         # Denormalise audio mixture input
-        original_cond = utils.denormalise_spectrogram_torch(cond)
+        original_cond = torch.expm1(cond)
 
         # Compute acc and voice based on mask and unnormalised mixture spectrogram, then renormalise
-        inst1 = utils.normalise_spectrogram_torch(original_cond * x)
-        inst2 = utils.normalise_spectrogram_torch(original_cond * (1.0 - x))
+        inst1 = torch.log1p(original_cond * x)
+        inst2 = torch.log1p(original_cond * (1.0 - x))
 
         x = torch.cat([inst1, inst2], dim=1)
 

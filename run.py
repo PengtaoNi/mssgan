@@ -16,8 +16,8 @@ def train(opt):
     utils.set_seeds(opt)
     device = utils.get_device()
     
-    dataset = InstDataset(opt.dataset_path)
-    dataloader = DataLoader(dataset, num_workers=2, batch_size=20, shuffle=True)
+    dataset = InstDataset(opt.dataset_path, opt.input_w)
+    dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True)
 
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim), torch.Tensor([1] * opt.z_dim))
 
@@ -42,12 +42,15 @@ def train(opt):
         D1_loss_total = 0
         D2_loss_total = 0
 
-        for i, (insts, mixture) in enumerate(dataloader):
-            inst1 = insts[0].to(device)
-            inst2 = insts[1].to(device)
-            mixture = mixture.to(device)
-
+        for i, sample in enumerate(dataloader):
+            print(sample.shape)
+            inst1 = sample[:, 0:1, :, :].to(device)
+            inst2 = sample[:, 1:2, :, :].to(device)
+            mixture = sample[:, 2:3, :, :].to(device)
             noise = noise_dist.sample().to(device)
+            print(mixture.shape)
+            print(noise.shape)
+
             fake = G([mixture, noise])
             fake1 = fake[0, 1]
             fake2 = fake[0, 2]
@@ -119,7 +122,7 @@ def get_opt():
 
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch_size', type=int, default=20)
+    parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--z_dim', type=int, default=50)
 
     parser.add_argument('--win_length', type=int, default=512)

@@ -15,8 +15,8 @@ class Unet(nn.Module):
         self.down3 = down(ngf*4, ngf*8)
         self.down4 = down(ngf*8, ngf*8)
 
-        fmap_shape = opt.input_w * opt.input_h // 8
-        noise_channels = 1
+        fmap_shape = (opt.input_w//8)*(opt.input_h//8)
+        noise_channels = 2
         self.fc_noise = nn.Linear(opt.z_dim, noise_channels*fmap_shape)
 
         self.up1 = up(ngf*16 + noise_channels, ngf*4)
@@ -42,7 +42,7 @@ class Unet(nn.Module):
 
         # FC to append noise channels to feature map
         noise_fmap_shape = [x5.shape[0], -1, x5.shape[2], x5.shape[3]]
-        noise_fmap = self.fc_noise(noise).view(noise_fmap_shape)
+        noise_fmap = self.fc_noise(noise.view(x5.shape[0], -1)).view(noise_fmap_shape)
         x5 = torch.cat([x5, noise_fmap], dim=1)
 
         # Upward

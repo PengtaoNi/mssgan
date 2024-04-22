@@ -17,7 +17,7 @@ def train(opt):
     dataset = InstDataset(opt.dataset_path, opt.input_w)
     dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True, drop_last=True)
 
-    noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim), torch.Tensor([1] * opt.z_dim))
+    noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim * opt.batch_size), torch.Tensor([1] * opt.z_dim * opt.batch_size))
 
     G = Unet(opt).to(device)
     G_optimizer = torch.optim.Adam(G.parameters(), lr=opt.lr,
@@ -112,7 +112,7 @@ def get_opt():
     parser.add_argument('--dataset_path', type=str, default='dataset')
     parser.add_argument('--model_path', type=str, default='G')
 
-    parser.add_argument('--epochs', type=int, default=2)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--z_dim', type=int, default=50)

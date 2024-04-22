@@ -1,7 +1,5 @@
 import os
-import random
 import argparse
-import numpy as np
 
 import torch
 from torch.utils.data import DataLoader
@@ -103,26 +101,16 @@ def train(opt):
         print(f"Epoch: {epoch}, G loss: {G_loss_avg[-1]}, \
                 D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
     
-    os.makedirs(opt.output_path, exist_ok=True)
-    output_path = os.path.join(opt.output_path, "G_" + str(epoch))
-    print("Saving generator at " + output_path)
-    torch.save(G.state_dict(), output_path)
-
-def eval(opt):
-    utils.set_seeds(opt)
-    device = utils.get_device()
-
-    G = Unet(opt).to(device)
-    G.load_state_dict(torch.load(opt.model_path))
-    G.eval()
+    os.makedirs(opt.model_path, exist_ok=True)
+    model_path = os.path.join(opt.model_path, "G_" + str(epoch))
+    print("Saving generator at " + model_path)
+    torch.save(G.state_dict(), model_path)
 
 def get_opt():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset_path', type=str, default='dataset')
-    parser.add_argument('--output_path', type=str, default='output')
     parser.add_argument('--model_path', type=str, default='G')
-    parser.add_argument('--input_path', type=str, default='input')
 
     parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--lr', type=float, default=1e-4)
@@ -144,4 +132,3 @@ if __name__ == "__main__":
     opt = get_opt()
 
     train(opt)
-    eval(opt)

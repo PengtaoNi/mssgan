@@ -19,21 +19,38 @@ def eval(opt):
     G.eval()
     
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim), torch.Tensor([1] * opt.z_dim))
-    noise = noise_dist.sample().to(device)
+    noise = noise_dist.sample()
 
-    input, sample_rate = librosa.load(opt.input_path)
+    input, sample_rate = librosa.load(opt.input_path, sr=44100)
+
+    input = librosa.util.fix_length(input, size=len(input)+opt.win_length//2)
 
     audio = np.expand_dims(input, axis=0).T
     spectrogram, phase = utils.compute_spectrogram(audio.squeeze(1), 512, 256)
-    spectrogram = spectrogram[:, :opt.input_w]
+    
+    inst1_pred = np.zeros(spectrogram.shape, np.float32)
+    inst2_pred = np.zeros(spectrogram.shape, np.float32)
 
-    output = G([torch.from_numpy(spectrogram).unsqueeze(0).unsqueeze(0).to(device), noise])
-    inst1 = output[:, 0:1]
-    inst2 = output[:, 1:2]
+    spectrogram_len = spectrogram.shape[1]
+    for i in range(0, spectrogram_len, opt.input_w):
+        if i + opt.input_w > spectrogram_len:
+            i = spectrogram_len - opt.input_w
+        
+        spectrogram_part = spectrogram[:, i:i+opt.input_w]
+        spectrogram_part = torch.from_numpy(spectrogram_part).unsqueeze(0).unsqueeze(0)
+
+        output = G([spectrogram_part.to(device), noise.to(device)]).detach().cpu().numpy()
+        inst1_pred[:, i:i+opt.input_w] = output[:, 0:1]
+        inst2_pred[:, i:i+opt.input_w] = output[:, 1:2]
+
+    inst1_pred = utils.denormalise_spectrogram(inst1_pred)
+    inst1_pred = utils.spectrogramToAudioFile(inst1_pred, 512, 256, phase=np.angle(phase))
+    inst2_pred = utils.denormalise_spectrogram(inst2_pred)
+    inst2_pred = utils.spectrogramToAudioFile(inst2_pred, 512, 256, phase=np.angle(phase))
 
     os.makedirs(opt.output_path, exist_ok=True)
-    wavfile.write(os.path.join(opt.output_path, 'inst1.wav'), sample_rate, inst1)
-    wavfile.write(os.path.join(opt.output_path, 'inst2.wav'), sample_rate, inst2)
+    wavfile.write(os.path.join(opt.output_path, 'inst1.wav'), sample_rate, inst1_pred)
+    wavfile.write(os.path.join(opt.output_path, 'inst2.wav'), sample_rate, inst2_pred)
 
 def get_opt():
     parser = argparse.ArgumentParser()
@@ -42,9 +59,6 @@ def get_opt():
     parser.add_argument('--input_path', type=str, default='input')
     parser.add_argument('--output_path', type=str, default='output')
 
-    parser.add_argument('--epochs', type=int, default=2)
-    parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--z_dim', type=int, default=50)
 
     parser.add_argument('--win_length', type=int, default=512)

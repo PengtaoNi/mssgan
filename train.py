@@ -48,8 +48,8 @@ def train(opt):
             noise = noise_dist.sample().to(device)
 
             fake = G([mixture, noise])
-            fake1 = fake[:, 0:1]
-            fake2 = fake[:, 1:2]
+            fake1 = fake[:, 1:2]
+            fake2 = fake[:, 2:3]
 
             # train discriminator
             # real_label = torch.full((inst1.size(0),), 1.0, device=device)
@@ -80,8 +80,8 @@ def train(opt):
             G_optimizer.zero_grad()
 
             generated = G([mixture, noise])
-            generated1 = generated[:, 0:1]
-            generated2 = generated[:, 1:2]
+            generated1 = generated[:, 1:2]
+            generated2 = generated[:, 2:3]
 
             D1_generated = D1(generated1)
             D2_generated = D2(generated2)

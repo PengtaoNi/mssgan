@@ -40,8 +40,8 @@ def eval(opt):
         spectrogram_part = torch.from_numpy(spectrogram_part).unsqueeze(0).unsqueeze(0)
 
         output = G([spectrogram_part.to(device), noise.to(device)]).detach().cpu().numpy()
-        inst1_pred[:, i:i+opt.input_w] = output[:, 0:1]
-        inst2_pred[:, i:i+opt.input_w] = output[:, 1:2]
+        inst1_pred[:, i:i+opt.input_w] = output[:, 1:2]
+        inst2_pred[:, i:i+opt.input_w] = output[:, 2:3]
 
     inst1_pred = utils.denormalise_spectrogram(inst1_pred)
     inst1_pred = utils.spectrogramToAudioFile(inst1_pred, 512, 256, phase=np.angle(phase))

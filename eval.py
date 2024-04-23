@@ -21,7 +21,7 @@ def eval(opt):
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim), torch.Tensor([1] * opt.z_dim))
     noise = noise_dist.sample()
 
-    input, sample_rate = librosa.load(opt.input_path, sr=44100)
+    input, sample_rate = librosa.load(opt.input_path)
 
     input = librosa.util.fix_length(input, size=len(input)+opt.win_length//2)
 

@@ -10,7 +10,7 @@ import utils
 
 def preprocess(path, input_w, inst_list):
     print('Preprocessing dataset...')
-    
+
     # concatenate samples for each instrument
     concat_dict = dict()
     max_len = 0

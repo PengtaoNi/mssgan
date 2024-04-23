@@ -8,10 +8,9 @@ from torch.utils.data.dataset import Dataset
 
 import utils
 
-def preprocess(path, input_w):
+def preprocess(path, input_w, inst_list):
     print('Preprocessing dataset...')
-    inst_list = ['flute', 'oboe']
-
+    
     # concatenate samples for each instrument
     concat_dict = dict()
     max_len = 0
@@ -67,13 +66,14 @@ def preprocess(path, input_w):
 
     print(f'{n_samples} samples')
     
-    return inst_list, n_samples
+    return n_samples
 
 class InstDataset(Dataset):
 
-    def __init__(self, path, input_w):
+    def __init__(self, path, input_w, inst1, inst2):
         self.path = path
-        self.inst_list, self.n_samples = preprocess(path, input_w)
+        self.inst_list = [inst1, inst2]
+        self.n_samples = preprocess(path, input_w, self.inst_list)
 
     def __getitem__(self, index):
         sample_path = os.path.join(self.path, str(index)+".npy")

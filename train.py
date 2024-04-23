@@ -112,6 +112,9 @@ def get_opt():
     parser.add_argument('--dataset_path', type=str, default='dataset')
     parser.add_argument('--model_path', type=str, default='G')
 
+    parser.add_argument('--inst1', type=str, default='piano')
+    parser.add_argument('--inst2', type=str, default='cello')
+
     parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=8)

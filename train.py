@@ -1,5 +1,6 @@
 import os
 import argparse
+import datetime
 
 import torch
 from torch.utils.data import DataLoader
@@ -98,8 +99,7 @@ def train(opt):
         G_loss_avg.append(G_loss_total / len(dataloader))
         D1_loss_avg.append(D1_loss_total / len(dataloader))
         D2_loss_avg.append(D2_loss_total / len(dataloader))
-        print(f"Epoch: {epoch}, G loss: {G_loss_avg[-1]}, \
-                D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
+        print(f"Epoch: {epoch}, {datetime.datetime.now().time()}, G loss: {G_loss_avg[-1]}, D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
     
     os.makedirs(opt.model_path, exist_ok=True)
     model_path = os.path.join(opt.model_path, "G_" + str(epoch))

@@ -15,7 +15,7 @@ def train(opt):
     utils.set_seeds(opt)
     device = utils.get_device()
     
-    dataset = InstDataset(opt.dataset_path, opt.input_w)
+    dataset = InstDataset(opt.dataset_path, opt.input_w, opt.inst1, opt.inst2)
     dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True, drop_last=True)
 
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim * opt.batch_size), torch.Tensor([1] * opt.z_dim * opt.batch_size))

@@ -101,7 +101,12 @@ def train(opt):
         D2_loss_avg.append(D2_loss_total / len(dataloader))
         print(f"Epoch: {epoch}, {datetime.datetime.now().time()}, G loss: {G_loss_avg[-1]}, D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
     
-    os.makedirs(opt.model_path, exist_ok=True)
+        if epoch % 50 == 0:
+            os.makedirs(opt.model_path, exist_ok=True)
+            model_path = os.path.join(opt.model_path, "G_" + str(epoch))
+            print("Saving generator at " + model_path)
+            torch.save(G.state_dict(), model_path)
+
     model_path = os.path.join(opt.model_path, "G_" + str(epoch))
     print("Saving generator at " + model_path)
     torch.save(G.state_dict(), model_path)
@@ -117,7 +122,7 @@ def get_opt():
 
     parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=20)
     parser.add_argument('--z_dim', type=int, default=50)
 
     parser.add_argument('--win_length', type=int, default=512)

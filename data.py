@@ -1,4 +1,5 @@
 import os
+import glob
 import numpy as np
 from scipy.io import wavfile
 import librosa
@@ -16,13 +17,14 @@ def preprocess(path, input_w, inst_list):
     max_len = 0
     for inst in inst_list:
         concat = []
-        for wav in os.listdir(os.path.join(path, inst)):
-            if not wav.endswith('.wav'):
-                continue
-            data, sample_rate = librosa.load(os.path.join(path, inst, wav))
+        for file in glob.glob(os.path.join(path, inst) + '/**/*.wav', recursive=True) + \
+                    glob.glob(os.path.join(path, inst) + '/**/*.mp3', recursive=True):
+            data, sample_rate = librosa.load(file)
             concat.append(data)
         concat = np.concatenate(concat)
         concat_dict[inst] = concat
+
+        print(f'{inst} length: {len(concat)}')
 
         if len(concat) > max_len:
             max_len = len(concat)
@@ -39,9 +41,9 @@ def preprocess(path, input_w, inst_list):
         mixture.append(concat)
     mixture = np.sum(mixture, axis=0)
     
-    for inst in inst_list:
-        wavfile.write(os.path.join(path, inst+'.wav'), sample_rate, concat_dict[inst])
-    wavfile.write(os.path.join(path, 'mixture.wav'), sample_rate, mixture)
+    # for inst in inst_list:
+    #     wavfile.write(os.path.join(path, inst+'.wav'), sample_rate, concat_dict[inst])
+    # wavfile.write(os.path.join(path, 'mixture.wav'), sample_rate, mixture)
     
     # generate spectrograms
     inst_spectrograms = dict()

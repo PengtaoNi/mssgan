@@ -51,30 +51,28 @@ def train(opt):
             fake1 = fake[:, 1:2]
             fake2 = fake[:, 2:3]
 
-            # train discriminator
-            # real_label = torch.full((inst1.size(0),), 1.0, device=device)
-            # fake_label = torch.full((inst1.size(0),), 0.0, device=device)
+            for j in range(opt.D_iter):
+                # train discriminator
+                D1_optimizer.zero_grad()
+                D2_optimizer.zero_grad()
+                
+                D1_real = D1(inst1)
+                D1_fake = D1(fake1)
+                D2_real = D2(inst2)
+                D2_fake = D2(fake2)
 
-            D1_optimizer.zero_grad()
-            D2_optimizer.zero_grad()
-            
-            D1_real = D1(inst1)
-            D1_fake = D1(fake1)
-            D2_real = D2(inst2)
-            D2_fake = D2(fake2)
+                D1_real_loss = criterion(D1_real, torch.full((inst1.size(0),), 1.0, device=device))
+                D1_fake_loss = criterion(D1_fake, torch.full((inst1.size(0),), 0.0, device=device))
+                D2_real_loss = criterion(D2_real, torch.full((inst1.size(0),), 1.0, device=device))
+                D2_fake_loss = criterion(D2_fake, torch.full((inst1.size(0),), 0.0, device=device))
 
-            D1_real_loss = criterion(D1_real, torch.full((inst1.size(0),), 1.0, device=device))
-            D1_fake_loss = criterion(D1_fake, torch.full((inst1.size(0),), 0.0, device=device))
-            D2_real_loss = criterion(D2_real, torch.full((inst1.size(0),), 1.0, device=device))
-            D2_fake_loss = criterion(D2_fake, torch.full((inst1.size(0),), 0.0, device=device))
+                D1_loss = (D1_real_loss + D1_fake_loss) / 2
+                D2_loss = (D2_real_loss + D2_fake_loss) / 2
 
-            D1_loss = (D1_real_loss + D1_fake_loss) / 2
-            D2_loss = (D2_real_loss + D2_fake_loss) / 2
-
-            D1_loss.backward(retain_graph=True)
-            D2_loss.backward()
-            D1_optimizer.step()
-            D2_optimizer.step()
+                D1_loss.backward(retain_graph=True)
+                D2_loss.backward()
+                D1_optimizer.step()
+                D2_optimizer.step()
 
             # train generator
             G_optimizer.zero_grad()
@@ -101,7 +99,7 @@ def train(opt):
         D2_loss_avg.append(D2_loss_total / len(dataloader))
         print(f"Epoch: {epoch}, {datetime.datetime.now().time()}, G loss: {G_loss_avg[-1]}, D1 loss: {D1_loss_avg[-1]}, D2 loss: {D2_loss_avg[-1]}")
     
-        if epoch % 50 == 0:
+        if epoch % 10 == 0:
             os.makedirs(opt.model_path, exist_ok=True)
             model_path = os.path.join(opt.model_path, "G_" + str(epoch))
             print("Saving generator at " + model_path)
@@ -120,10 +118,13 @@ def get_opt():
     parser.add_argument('--inst1', type=str, default='piano')
     parser.add_argument('--inst2', type=str, default='cello')
 
-    parser.add_argument('--epochs', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch_size', type=int, default=20)
+
     parser.add_argument('--z_dim', type=int, default=50)
+    parser.add_argument('--G_dim', type=int, default=32)
+    parser.add_argument('--D_iter', type=int, default=2)
 
     parser.add_argument('--win_length', type=int, default=512)
     parser.add_argument('--hop_length', type=int, default=256)

@@ -6,9 +6,11 @@ import torch.nn.functional as F
 import utils
 
 class Unet(nn.Module):
-    def __init__(self, opt, ngf=32, nc_in=1, nc_out=1):
+    def __init__(self, opt, nc_in=1, nc_out=1):
 
         super(Unet, self).__init__()
+        ngf = opt.G_dim
+
         self.inc = inconv(nc_in, ngf)
         self.down1 = down(ngf, ngf*2)
         self.down2 = down(ngf*2, ngf*4)

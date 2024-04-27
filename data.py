@@ -9,7 +9,7 @@ from torch.utils.data.dataset import Dataset
 
 import utils
 
-def preprocess(path, input_w, inst_list):
+def preprocess(data_path, processed_data_path, input_w, inst_list):
     print('Preprocessing dataset...')
 
     # concatenate samples for each instrument
@@ -17,8 +17,8 @@ def preprocess(path, input_w, inst_list):
     max_len = 0
     for inst in inst_list:
         concat = []
-        for file in glob.glob(os.path.join(path, inst) + '/**/*.wav', recursive=True) + \
-                    glob.glob(os.path.join(path, inst) + '/**/*.mp3', recursive=True):
+        for file in glob.glob(os.path.join(data_path, inst) + '/**/*.wav', recursive=True) + \
+                    glob.glob(os.path.join(data_path, inst) + '/**/*.mp3', recursive=True):
             data, sample_rate = librosa.load(file)
             concat.append(data)
         concat = np.concatenate(concat)
@@ -62,7 +62,7 @@ def preprocess(path, input_w, inst_list):
             sample.append(inst_spectrograms[inst][:, i:i+input_w])
         sample.append(mix_spectrogram[:, i:i+input_w])
         sample = np.stack(sample, axis=0)
-        np.save(os.path.join(path, str(n_samples)+".npy"), sample)
+        np.save(os.path.join(processed_data_path, str(n_samples)+".npy"), sample)
 
         n_samples += 1
 
@@ -72,13 +72,14 @@ def preprocess(path, input_w, inst_list):
 
 class InstDataset(Dataset):
 
-    def __init__(self, path, input_w, inst1, inst2):
-        self.path = path
+    def __init__(self, data_path, processed_data_path, input_w, inst1, inst2):
+        self.data_path = data_path
+        self.processed_data_path = processed_data_path
         self.inst_list = [inst1, inst2]
-        self.n_samples = preprocess(path, input_w, self.inst_list)
+        self.n_samples = preprocess(data_path, processed_data_path, input_w, self.inst_list)
 
     def __getitem__(self, index):
-        sample_path = os.path.join(self.path, str(index)+".npy")
+        sample_path = os.path.join(self.processed_data_path, str(index)+".npy")
         sample = torch.from_numpy(np.load(sample_path))
 
         return sample

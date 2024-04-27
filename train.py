@@ -15,7 +15,7 @@ def train(opt):
     utils.set_seeds(opt)
     device = utils.get_device()
     
-    dataset = InstDataset(opt.dataset_path, opt.input_w, opt.inst1, opt.inst2)
+    dataset = InstDataset(opt.data_path, opt.processed_data_path, opt.input_w, opt.inst1, opt.inst2)
     dataloader = DataLoader(dataset, num_workers=2, batch_size=opt.batch_size, shuffle=True, drop_last=True)
 
     noise_dist = Uniform(torch.Tensor([-1] * opt.z_dim * opt.batch_size), torch.Tensor([1] * opt.z_dim * opt.batch_size))
@@ -112,7 +112,8 @@ def train(opt):
 def get_opt():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset_path', type=str, default='dataset')
+    parser.add_argument('--data_path', type=str, default='dataset')
+    parser.add_argument('--processed_data_path', type=str, default='dataset')
     parser.add_argument('--model_path', type=str, default='G')
 
     parser.add_argument('--inst1', type=str, default='piano')
